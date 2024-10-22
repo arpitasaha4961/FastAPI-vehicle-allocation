@@ -117,7 +117,7 @@ def validate_object_id(id: str):
         raise HTTPException(status_code=400, detail="Invalid ObjectId")
 
 # Function to update allocation in the MongoDB collection
-async def update_allocation(allocation_id: ObjectId, update_data: dict):
+async def update_allocation(allocation_id: str, update_data: dict):
     allocation_obj_id = validate_object_id(allocation_id)
 
     result = allocations.update_one(
@@ -141,6 +141,7 @@ async def update_allocation(allocation_id: ObjectId, update_data: dict):
 
 async def delete_allocation(allocation_id: ObjectId):
     """Delete a vehicle allocation."""
+    allocation_obj_id = validate_object_id(allocation_id)
     
     result = allocations.delete_one({"_id": allocation_id})
     
