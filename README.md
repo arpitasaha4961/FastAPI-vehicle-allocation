@@ -1,5 +1,8 @@
 # FastAPI-vehicle-allocation
 
+```markdown
+vehicle-allocation/ │ ├── app/ │ ├── main.py # FastAPI Entry Point │ ├── models.py # MongoDB Models │ ├── crud.py # CRUD Logic │ ├── schemas.py # Pydantic Schemas │ ├── utils.py # Utility Functions (like caching) │ ├── db.py # MongoDB Connection Logic │ ├── tests/ # Unit and Integration Tests │ └── test_allocations.py ├── Dockerfile # Docker Configuration ├── docker-compose.yml # MongoDB with FastAPI ├── requirements.txt # Dependencies └── README.md # Setup Instructions
+
 ## Setup
 
 1. . Clone the repository:
@@ -14,7 +17,7 @@
    pip install -r requirements.txt
    fastapi run .\app\main.py
    
-5. OR Build and run the Docker containers:
+  OR Build and run the Docker containers:
    ```bash
    docker-compose up --build
 
