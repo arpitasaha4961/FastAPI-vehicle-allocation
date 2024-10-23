@@ -1,6 +1,6 @@
 from app.db import employees,vehicles,allocations
-from fastapi import HTTPException, status
-from typing import List
+from fastapi import HTTPException, status,Query
+from typing import List,Optional
 from datetime import datetime,date
 from bson import ObjectId
 
@@ -55,6 +55,14 @@ async def delete_vehicle(vehicle_id: int):
 
 async def create_allocation(employee_id: int, vehicle_id: int, allocation_date: datetime):
     """Create a new vehicle allocation for an employee."""
+
+    
+    print(f"Received allocation_date: {allocation_date}")
+    print(f"Today's date: {date.today()}")
+
+    # Ensure the input is parsed correctly
+    if allocation_date.date() <= date.today():
+        raise HTTPException(status_code=400, detail="Allocation date must be in the future.")
 
     # Check if the employee exists
     employee = employees.find_one({"id": employee_id})
@@ -120,6 +128,8 @@ def validate_object_id(id: str):
 async def update_allocation(allocation_id: str, update_data: dict):
     allocation_obj_id = validate_object_id(allocation_id)
 
+    
+
     result = allocations.update_one(
         {"_id": allocation_obj_id},
         {"$set": update_data}
@@ -156,3 +166,36 @@ async def get_allocations() -> List[dict]:
     
     all_allocations = allocations.find().to_list(1000)
     return all_allocations
+
+
+
+def serialize_allocation(allocation):
+    """Convert ObjectId to string and format dates."""
+    return {
+        "id": str(allocation["_id"]),
+        "employee_id": allocation["employee_id"],
+        "vehicle_id": allocation["vehicle_id"],
+        "allocation_date": allocation["allocation_date"].isoformat(),
+    }
+
+async def fetch_allocation_report(
+    allocations,
+    vehicle_id: Optional[str] = None,
+    employee_id: Optional[int] = None,
+) -> List[dict]:
+    """Fetch allocation report from the database."""
+    
+    # Build query filter
+    query = {}
+    if vehicle_id:
+        query["vehicle_id"] = vehicle_id
+    if employee_id is not None:  # Check for None explicitly
+        query["employee_id"] = employee_id
+
+    # Execute the query
+    allocations_query = allocations.find(query)
+    
+    # Serialize the allocations to make them JSON-compatible
+    result = [serialize_allocation(allocation) for allocation in allocations_query]
+
+    return result

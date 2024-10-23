@@ -1,11 +1,12 @@
-from fastapi import FastAPI,HTTPException
-from app.crud import create_employee, delete_employee,create_vehicle, delete_vehicle,create_allocation,delete_allocation,update_allocation,get_allocations
+from fastapi import FastAPI,HTTPException,Query
+from app.crud import create_employee, delete_employee,create_vehicle, delete_vehicle,create_allocation,delete_allocation,update_allocation,get_allocations,fetch_allocation_report
 from app.models import Employee,Vehicle,Allocation
 from app.db import employees, vehicles, allocations 
 from datetime import datetime
 from typing import Dict
-from typing import List
+from typing import List,Optional
 from bson import ObjectId
+
 
 app = FastAPI(title="Employee Management API", version="1.0.0")
 
@@ -95,3 +96,17 @@ async def get_allocations():
     
     all_allocations = allocations.find().to_list(1000)
     return all_allocations
+
+
+@app.get("/allocations/report")
+async def get_allocation_report(
+    vehicle_id: Optional[int] = Query(None, description="Filter by vehicle ID"),
+    employee_id: Optional[int] = Query(None, description="Filter by employee ID"),
+):
+    # Call the CRUD function to get allocations
+    result = await fetch_allocation_report(allocations, vehicle_id, employee_id)
+
+    if not result:
+        raise HTTPException(status_code=404, detail="No allocations found with the specified filters")
+
+    return result
