@@ -1,7 +1,7 @@
-from fastapi import FastAPI,HTTPException,Query
+from fastapi import FastAPI,HTTPException,Query,Path
 from fastapi.responses import RedirectResponse
-from app.crud import create_employee, delete_employee,create_vehicle, delete_vehicle,create_allocation,delete_allocation,update_allocation,get_allocations,fetch_allocation_report
-from app.models import Employee,Vehicle,Allocation,EmployeeResponse,VehicleResponse
+from app.crud import create_employee, delete_employee,create_vehicle, delete_vehicle,create_allocation,delete_allocation,update_allocation,fetch_allocation_report
+from app.models import Employee,Vehicle,Allocation,EmployeeResponse,VehicleResponse,AllocationResponse
 from app.db import employees, vehicles, allocations 
 from datetime import datetime
 from typing import Dict
@@ -54,19 +54,19 @@ async def create_allocation_endpoint(allocation: Allocation):
 
 
 @app.put("/allocations/{allocation_id}")
-async def update_allocation_endpoint(allocation_id: str, update_data: Allocation):
+async def update_allocation_endpoint( update_data: Allocation,allocation_id: str = Path(..., description="Enter the objectID of the allocation to update.")):
     """Update a new vehicle allocation for an employee."""
-    update_dict = update_data.dict()  # Converts the model instance to a dictionary
+    update_dict = update_data.dict()  
     result = await update_allocation(allocation_id, update_dict)
 
     return result
 
 
 @app.delete("/allocations/{allocation_id}")
-async def delete_allocation_endpoint(allocation_id: str):
+async def delete_allocation_endpoint(allocation_id: str = Path(..., description="Enter the objectID of the allocation to update.")):
     """Delete a vehicle allocation."""
     
-    # Convert the allocation_id to an ObjectId
+
     try:
         allocation_obj_id = ObjectId(allocation_id)
     except Exception:
@@ -76,12 +76,17 @@ async def delete_allocation_endpoint(allocation_id: str):
     
     return result
 
-@app.get("/allocations/", response_model=List[Allocation])
+@app.get("/allocations/", response_model=List[AllocationResponse])
 async def get_allocations():
     """Retrieve all allocations."""
     
     all_allocations = allocations.find().to_list(1000)
-    return all_allocations
+    response_list = []
+    for allocation in all_allocations:
+        allocation["_id"] = str(allocation["_id"]) 
+        response_list.append(AllocationResponse(**allocation))
+
+    return response_list
 
 
 @app.get("/allocations/report")

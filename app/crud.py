@@ -169,7 +169,7 @@ async def update_allocation(allocation_id: str, update_data: dict):
     current_datetime = datetime.now(UTC)
 
     if allocation_date < current_datetime:
-        raise HTTPException(status_code=400, detail="Cannot update allocation for past dates.")
+        raise HTTPException(status_code=400, detail="Cannot update allocation of past dates.")
 
     result = allocations.update_one(
         {"_id": allocation_obj_id},
@@ -177,7 +177,7 @@ async def update_allocation(allocation_id: str, update_data: dict):
     )
 
     if result.modified_count == 1:
-        updated_allocation = allocations.find_one({"_id": allocation_obj_id})  # Fetch updated data if needed
+        updated_allocation = allocations.find_one({"_id": allocation_obj_id})  
         if updated_allocation:
             updated_allocation["_id"] = str(updated_allocation["_id"])
 
@@ -207,7 +207,7 @@ async def delete_allocation(allocation_id: str):
 
 
     if allocation_date < current_datetime:
-        raise HTTPException(status_code=400, detail="Cannot delete allocation for past dates.")
+        raise HTTPException(status_code=400, detail="Cannot delete allocation of past dates.")
 
     result = allocations.delete_one({"_id": allocation_obj_id})
     
@@ -217,13 +217,6 @@ async def delete_allocation(allocation_id: str):
     return {"message": "Allocation deleted successfully."}
 
 
-
-
-async def get_allocations() -> List[dict]:
-    """Retrieve all allocations."""
-    
-    all_allocations = allocations.find().to_list(1000)
-    return all_allocations
 
 
 def serialize_allocation(allocation):
