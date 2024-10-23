@@ -5,6 +5,9 @@ services:
       - "8000:8000"
     depends_on:
       - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+
   mongo:
     image: mongo:latest
     ports:

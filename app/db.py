@@ -1,11 +1,16 @@
+import os
 from pymongo import MongoClient
+from dotenv import load_dotenv
 
-# MongoDB connection details
-MONGO_URI = "mongodb://localhost:27017"  # Adjust if you're using MongoDB Atlas or Docker
+# Load environment variables from the .env file
+load_dotenv()
+
+MONGO_URI = os.getenv("MONGO_URI") 
+print(MONGO_URI)
 client = MongoClient(MONGO_URI)
 db = client["vehicle_allocation"]
 
-# Employee collection
+
 employees = db["employees"]
 vehicles = db["vehicles"]
 allocations = db["allocations"]
