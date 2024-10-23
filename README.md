@@ -2,6 +2,7 @@
 
 ## Project Structure
 ```plaintext
+
 vehicle-allocation/
 │
 ├── app/
