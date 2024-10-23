@@ -1,9 +1,12 @@
 from app.db import employees,vehicles,allocations
 from fastapi import HTTPException, status,Query
 from typing import List,Optional
-from datetime import datetime,date
+from datetime import datetime,date,time
 from bson import ObjectId
+import pytz  # Import pytz for timezone handling
 
+# Define a timezone (for example, UTC)
+UTC = pytz.UTC
 
 async def create_employee(employee_id: int, name: str, department: str):
     """Add a new employee to the system."""
@@ -53,17 +56,21 @@ async def delete_vehicle(vehicle_id: int):
         )
     return {"message": "Vehicle deleted successfully."}
 
+def ensure_datetime(input_date: date | datetime) -> datetime:
+    """Ensure the input is a datetime object."""
+    if isinstance(input_date, date) and not isinstance(input_date, datetime):
+        # Combine with minimal time (00:00:00) to convert date to datetime
+        return datetime.combine(input_date, time.min)
+    return input_date  # Return as-is if already datetime
+
 
 async def create_allocation(employee_id: int, vehicle_id: int, allocation_date: datetime):
     """Create a new vehicle allocation for an employee."""
-
     
-    print(f"Received allocation_date: {allocation_date}")
-    print(f"Today's date: {date.today()}")
-
-    # Ensure the input is parsed correctly
-    if allocation_date.date() <= date.today():
-        raise HTTPException(status_code=400, detail="Allocation date must be in the future.")
+    # Ensure both allocation_date and current datetime are timezone-aware
+    if allocation_date.tzinfo is None:  # Check if allocation_date is naive
+        allocation_date = UTC.localize(allocation_date)  # Make it aware
+    current_datetime = datetime.now(UTC)  # Get the current datetime as UTC
 
     # Check if the employee exists
     employee = employees.find_one({"id": employee_id})
@@ -75,15 +82,19 @@ async def create_allocation(employee_id: int, vehicle_id: int, allocation_date: 
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found.")
 
-    # Convert the allocation_date to just the date part for comparison
-    allocation_date_only = allocation_date.date()
+    # Ensure the input is parsed correctly
+    if allocation_date <= current_datetime:  # Use the timezone-aware current datetime
+        raise HTTPException(status_code=400, detail="Allocation date must be in the future.")
+
+    # Convert the allocation_date to datetime if it's not already
+    formatted_date = ensure_datetime(allocation_date)
 
     # Check if the vehicle is already allocated for the specified date
     existing_allocation = allocations.find_one({
         "vehicle_id": vehicle_id,
-        "allocation_date": {"$eq": allocation_date_only}  # Check for exact match on date
+        "allocation_date": {"$eq": formatted_date}  # Check for exact match on datetime
     })
-    
+
     if existing_allocation:
         raise HTTPException(status_code=400, detail="Vehicle already allocated for this date.")
 
@@ -91,15 +102,18 @@ async def create_allocation(employee_id: int, vehicle_id: int, allocation_date: 
     allocation_dict = {
         "employee_id": employee_id,
         "vehicle_id": vehicle_id,
-        "allocation_date": allocation_date_only  # Store just the date part
+        "allocation_date": formatted_date  # Store as datetime
     }
     allocations.insert_one(allocation_dict)
 
-    # Return a success message along with the allocation details
-    return {
-        "message": "Vehicle allocation created successfully.",
-        "allocation": allocation_dict
+    # Prepare and return the response with the correct structure
+    response = {
+        "employee_id": employee_id,
+        "vehicle_id": vehicle_id,
+        "allocation_date": formatted_date.isoformat()  
     }
+    return response
+
 
 async def get_allocation(allocation_id: str):
     """Retrieve an allocation by its ObjectId."""
@@ -125,21 +139,39 @@ def validate_object_id(id: str):
     else:
         raise HTTPException(status_code=400, detail="Invalid ObjectId")
 
-# Function to update allocation in the MongoDB collection
+
 async def update_allocation(allocation_id: str, update_data: dict):
+    """Update an allocation by its ObjectId."""
     allocation_obj_id = validate_object_id(allocation_id)
 
-    
+    # Fetch the existing allocation to check the date
+    existing_allocation = allocations.find_one({"_id": allocation_obj_id})
 
+    if not existing_allocation:
+        raise HTTPException(status_code=404, detail="Allocation not found.")
+
+    # Check if the allocation date is in the past
+    allocation_date = existing_allocation["allocation_date"]
+
+    # Ensure the allocation_date is timezone-aware
+    if allocation_date.tzinfo is None:  # Check if naive
+        allocation_date = UTC.localize(allocation_date)  # Localize to UTC
+
+    # Ensure the current datetime is timezone-aware
+    current_datetime = datetime.now(UTC)
+
+    # Compare the dates
+    if allocation_date < current_datetime:
+        raise HTTPException(status_code=400, detail="Cannot update allocation for past dates.")
+
+    # Proceed with the update
     result = allocations.update_one(
         {"_id": allocation_obj_id},
         {"$set": update_data}
     )
 
     if result.modified_count == 1:
-        # If the allocation was updated, return a success message along with updated data
         updated_allocation = allocations.find_one({"_id": allocation_obj_id})  # Fetch updated data if needed
-
         if updated_allocation:
             updated_allocation["_id"] = str(updated_allocation["_id"])
 
@@ -150,11 +182,32 @@ async def update_allocation(allocation_id: str, update_data: dict):
     else:
         raise HTTPException(status_code=404, detail="Allocation not found.")
 
-async def delete_allocation(allocation_id: ObjectId):
+
+async def delete_allocation(allocation_id: str):
     """Delete a vehicle allocation."""
     allocation_obj_id = validate_object_id(allocation_id)
     
-    result = allocations.delete_one({"_id": allocation_id})
+    # Fetch the existing allocation to check the date
+    existing_allocation = allocations.find_one({"_id": allocation_obj_id})
+
+    if not existing_allocation:
+        raise HTTPException(status_code=404, detail="Allocation not found.")
+
+    # Check if the allocation date is in the past
+    allocation_date = existing_allocation["allocation_date"]
+
+    # Ensure the allocation_date is timezone-aware
+    if allocation_date.tzinfo is None:  # Check if naive
+        allocation_date = UTC.localize(allocation_date)  # Localize to UTC
+
+    # Ensure the current datetime is timezone-aware
+    current_datetime = datetime.now(UTC)
+
+    # Compare the dates
+    if allocation_date < current_datetime:
+        raise HTTPException(status_code=400, detail="Cannot delete allocation for past dates.")
+
+    result = allocations.delete_one({"_id": allocation_obj_id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Allocation not found.")
@@ -162,12 +215,13 @@ async def delete_allocation(allocation_id: ObjectId):
     return {"message": "Allocation deleted successfully."}
 
 
+
+
 async def get_allocations() -> List[dict]:
     """Retrieve all allocations."""
     
     all_allocations = allocations.find().to_list(1000)
     return all_allocations
-
 
 
 def serialize_allocation(allocation):
@@ -186,14 +240,13 @@ async def fetch_allocation_report(
 ) -> List[dict]:
     """Fetch allocation report from the database."""
     
-    # Build query filter
     query = {}
     if vehicle_id:
         query["vehicle_id"] = vehicle_id
     if employee_id is not None:  # Check for None explicitly
         query["employee_id"] = employee_id
 
-    # Execute the query
+
     allocations_query = allocations.find(query)
     
     # Serialize the allocations to make them JSON-compatible

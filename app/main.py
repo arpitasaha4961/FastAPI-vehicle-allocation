@@ -37,36 +37,24 @@ async def remove_vehicle(vehicle_id: int):
 
 
 @app.post("/allocations/", response_model=Allocation)
-async def create_allocation(allocation: Allocation):
+async def create_allocation_endpoint(allocation: Allocation):
     """Create a new vehicle allocation for an employee."""
-    
-    # Check if the employee exists
-    employee = employees.find_one({"id": allocation.employee_id})
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found.")
-    
-    # Check if the vehicle exists
-    vehicle = vehicles.find_one({"id": allocation.vehicle_id})
-    if not vehicle:
-        raise HTTPException(status_code=404, detail="Vehicle not found.")
-    
-    # Check if the vehicle is already allocated for the specified date
-    existing_allocation = allocations.find_one({
-        "vehicle_id": allocation.vehicle_id,
-        "allocation_date": allocation.allocation_date
-    })
-    if existing_allocation:
-        raise HTTPException(status_code=400, detail="Vehicle already allocated for this date.")
+    try:
+        result = await create_allocation(
+            employee_id=allocation.employee_id,
+            vehicle_id=allocation.vehicle_id,
+            allocation_date=allocation.allocation_date
+        )
+        return result
+    except HTTPException as e:
+        raise e  # HTTP exceptions for debug
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # Insert the new allocation
-    allocation_dict = allocation.dict()
-    allocations.insert_one(allocation_dict)
-    
-    return allocation_dict
 
 @app.put("/allocations/{allocation_id}")
 async def update_allocation_endpoint(allocation_id: str, update_data: Allocation):
-    # Create a dictionary from the Pydantic model
+    """Update a new vehicle allocation for an employee."""
     update_dict = update_data.dict()  # Converts the model instance to a dictionary
 
     # Call your actual update function here
