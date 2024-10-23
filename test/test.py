@@ -1,7 +1,8 @@
 import pytest
-from httpx import AsyncClient, ASGITransport  # Include ASGITransport here
+from httpx import AsyncClient, ASGITransport  
 from fastapi import status
-from app.main import app, employees  # Import FastAPI app and employees collection
+from app.main import app, employees  
+
 
 @pytest.fixture(autouse=True)
 def clear_database():
@@ -25,9 +26,8 @@ async def test_create_employee():
         # Check if the response has the correct data
         assert data["name"] == "Alic"
         assert data["department"] == "Engineering"
-        assert "id" in data  # Ensure `id` is auto-generated and returned as part of the response
-        assert isinstance(data["id"], int)  # Confirm `id` is an integer
-
+        assert "id" in data 
+        assert isinstance(data["id"], int)  
 
 @pytest.mark.asyncio
 async def test_create_vehicle():
@@ -48,4 +48,4 @@ async def test_create_vehicle():
         assert created_vehicle["model"] == vehicle_data["model"]
         assert created_vehicle["driverId"] == vehicle_data["driverId"]
         assert created_vehicle["driverName"] == vehicle_data["driverName"]
-        assert "id" in created_vehicle  # Check if an ID was generated
+        assert "id" in created_vehicle  
