@@ -1,7 +1,7 @@
 # FastAPI-vehicle-allocation
 
 ## Project Structure
-```markdown
+`plaintext
 vehicle-allocation/
 │
 ├── app/
