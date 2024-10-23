@@ -28,7 +28,7 @@ To run this FastAPI application, you will need the following software installed:
 - **Docker Compose**: Version 1.27 or higher (for running multi-container applications)
 - **MongoDB**: A running instance (either locally or via Docker)
 
-### Optional
+## Optional
 
 - **Virtual Environment**: It's recommended to use a virtual environment to manage dependencies, such as `venv` or `virtualenv`.
 
