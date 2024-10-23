@@ -4,6 +4,7 @@ from typing import List,Optional
 from datetime import datetime,date
 from bson import ObjectId
 
+
 async def create_employee(employee_id: int, name: str, department: str):
     """Add a new employee to the system."""
     # Check if the employee already exists
