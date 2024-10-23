@@ -8,12 +8,12 @@ from typing import List,Optional
 from bson import ObjectId
 
 
-app = FastAPI(title="Employee Management API", version="1.0.0")
+app = FastAPI(title="Vehicle Allocation API", version="1.0.0")
 
-# New root route
+
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the Employee Management API"}
+    return {"message": "Welcome to the Vehicle Allocation API"}
 
 @app.post("/employees/", response_model=Employee)
 async def add_employee(employee: Employee):
@@ -73,7 +73,6 @@ async def delete_allocation_endpoint(allocation_id: str):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid allocation ID format.")
 
-    # Call the delete function from crud.py
     result = await delete_allocation(allocation_obj_id)
     
     return result

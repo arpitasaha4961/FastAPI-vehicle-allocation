@@ -3,9 +3,9 @@ from fastapi import HTTPException, status,Query
 from typing import List,Optional
 from datetime import datetime,date,time
 from bson import ObjectId
-import pytz  # Import pytz for timezone handling
+import pytz  
 
-# Define a timezone (for example, UTC)
+
 UTC = pytz.UTC
 
 async def create_employee(employee_id: int, name: str, department: str):
@@ -59,9 +59,8 @@ async def delete_vehicle(vehicle_id: int):
 def ensure_datetime(input_date: date | datetime) -> datetime:
     """Ensure the input is a datetime object."""
     if isinstance(input_date, date) and not isinstance(input_date, datetime):
-        # Combine with minimal time (00:00:00) to convert date to datetime
         return datetime.combine(input_date, time.min)
-    return input_date  # Return as-is if already datetime
+    return input_date 
 
 
 async def create_allocation(employee_id: int, vehicle_id: int, allocation_date: datetime):
@@ -69,8 +68,8 @@ async def create_allocation(employee_id: int, vehicle_id: int, allocation_date: 
     
     # Ensure both allocation_date and current datetime are timezone-aware
     if allocation_date.tzinfo is None:  # Check if allocation_date is naive
-        allocation_date = UTC.localize(allocation_date)  # Make it aware
-    current_datetime = datetime.now(UTC)  # Get the current datetime as UTC
+        allocation_date = UTC.localize(allocation_date) 
+    current_datetime = datetime.now(UTC) 
 
     # Check if the employee exists
     employee = employees.find_one({"id": employee_id})
@@ -82,7 +81,6 @@ async def create_allocation(employee_id: int, vehicle_id: int, allocation_date: 
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found.")
 
-    # Ensure the input is parsed correctly
     if allocation_date <= current_datetime:  # Use the timezone-aware current datetime
         raise HTTPException(status_code=400, detail="Allocation date must be in the future.")
 
@@ -118,7 +116,6 @@ async def create_allocation(employee_id: int, vehicle_id: int, allocation_date: 
 async def get_allocation(allocation_id: str):
     """Retrieve an allocation by its ObjectId."""
     
-    # Convert the allocation_id from string to ObjectId
     try:
         allocation_id_obj = ObjectId(allocation_id)
     except Exception:
