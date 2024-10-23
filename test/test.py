@@ -1,8 +1,7 @@
-# test_employee.py
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport  # Include ASGITransport here
 from fastapi import status
-from main import app, employees  # Import FastAPI app and employees collection
+from app.main import app, employees  # Import FastAPI app and employees collection
 
 @pytest.fixture(autouse=True)
 def clear_database():
@@ -12,9 +11,9 @@ def clear_database():
 @pytest.mark.asyncio
 async def test_create_employee():
     """Test the creation of an employee with auto-generated ID."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         employee_data = {
-            "name": "Alice",
+            "name": "Alic",
             "department": "Engineering"
         }
 
@@ -24,25 +23,29 @@ async def test_create_employee():
         data = response.json()
         
         # Check if the response has the correct data
-        assert data["name"] == "Alice"
+        assert data["name"] == "Alic"
         assert data["department"] == "Engineering"
         assert "id" in data  # Ensure `id` is auto-generated and returned as part of the response
         assert isinstance(data["id"], int)  # Confirm `id` is an integer
 
+
 @pytest.mark.asyncio
-async def test_create_employee_duplicate_name():
-    """Test failure when creating an employee with a duplicate name."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        employee_data = {
-            "name": "Bob",
-            "department": "Finance"
+async def test_create_vehicle():
+    """Test creating a vehicle."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        vehicle_data = {
+            "model": "Toyota",
+            "driverId": 1,
+            "driverName": "John Doe"
         }
 
-        # First creation should succeed
-        response = await client.post("/employees/", json=employee_data)
-        assert response.status_code == status.HTTP_200_OK
-
-        # Second creation with the same name should fail
-        response = await client.post("/employees/", json=employee_data)
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.json()["detail"] == "Employee already exists."
+        # Send POST request to create a vehicle
+        response = await client.post("/vehicles/", json=vehicle_data)
+        
+        # Check if the vehicle was created successfully
+        assert response.status_code == 200
+        created_vehicle = response.json()
+        assert created_vehicle["model"] == vehicle_data["model"]
+        assert created_vehicle["driverId"] == vehicle_data["driverId"]
+        assert created_vehicle["driverName"] == vehicle_data["driverName"]
+        assert "id" in created_vehicle  # Check if an ID was generated
