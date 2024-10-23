@@ -10,13 +10,15 @@
 3. Run python -m venv venv 
 4. Activate the virtual environment
 4. If run locally then use following steps:
-    1. pip install -r requirements.txt
-    2. fastapi run .\app\main.py
+        ```bash
+        pip install -r requirements.txt
+        ```bash
+        fastapi run .\app\main.py
    OR Build and run the Docker containers:
    ```bash
    docker-compose up --build
 
-5. Access the app at http://localhost:8000/docs
+6. Access the app at http://localhost:8000/docs
 
 Deployment Strategy
 1. Use Docker for consistent environments.
