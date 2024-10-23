@@ -10,10 +10,11 @@
 3. Run python -m venv venv 
 4. Activate the virtual environment
 4. If run locally then use following steps:
-        ```bash
-        pip install -r requirements.txt
-        ```bash
-        fastapi run .\app\main.py
+   ```bash
+   pip install -r requirements.txt
+   
+   ```bash
+   fastapi run .\app\main.py
    OR Build and run the Docker containers:
    ```bash
    docker-compose up --build
